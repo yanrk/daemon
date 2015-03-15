@@ -13,85 +13,10 @@
 #include "net/utility/utility.h"
 #include "daemon.h"
 #include "utility.h"
-#include "markup.h"
 #include "base/log/log.h"
-#include "base/string/string.h"
 #include "base/time/time.h"
-
-static bool markup_get_element(CMarkup & markup, const char * element_name, std::string & element_value, bool ignore_not_exist_error)
-{
-    if (nullptr == element_name)
-    {
-        RUN_LOG_ERR("element_name is nullptr");
-        return(false);
-    }
-
-    if (!markup.FindChildElem(element_name))
-    {
-        if (!ignore_not_exist_error)
-        {
-            RUN_LOG_ERR("get element <%s> failed", element_name);
-        }
-        return(false);
-    }
-
-    element_value = markup.GetChildData();
-    markup.ResetChildPos();
-
-    Stupid::Base::stupid_string_trim(element_value);
-
-    return(true);
-}
-
-static bool markup_get_block(CMarkup & markup, const char * block_name, const char * item_name, bool ignore_not_exist_error, bool ignore_empty_item, std::list<std::string> & item_value_list)
-{
-    if (nullptr == block_name)
-    {
-        RUN_LOG_ERR("block_name is nullptr");
-        return(false);
-    }
-
-    if (nullptr == item_name)
-    {
-        RUN_LOG_ERR("item_name is nullptr");
-        return(false);
-    }
-
-    if (!markup.FindChildElem(block_name))
-    {
-        if (!ignore_not_exist_error)
-        {
-            RUN_LOG_ERR("get block <%s> failed", block_name);
-        }
-        return(false);
-    }
-
-    if (!markup.IntoElem())
-    {
-        RUN_LOG_ERR("markup.intoelem failed");
-        return(false);
-    }
-
-    while (markup.FindChildElem(item_name))
-    {
-        std::string item_value = markup.GetChildData();
-        Stupid::Base::stupid_string_trim(item_value);
-        if (!ignore_empty_item || !item_value.empty())
-        {
-            item_value_list.push_back(item_value);
-        }
-    }
-
-    if (!markup.OutOfElem())
-    {
-        RUN_LOG_ERR("markup.outofelem failed");
-        return(false);
-    }
-
-    markup.ResetChildPos();
-
-    return(true);
-}
+#include "base/config/xml.h"
+#include "base/string/string.h"
 
 struct ServiceInfo
 {
@@ -106,35 +31,36 @@ struct ServiceInfo
 
 static bool parse_item(const std::string & service_conf, ServiceInfo & service_info)
 {
-    CMarkup markup;
-    if (!markup.SetDoc(service_conf))
+    Stupid::Base::Xml xml;
+
+    if (!xml.set_document(service_conf.c_str()))
     {
-        RUN_LOG_CRI("markup.setdoc failed, content:{%s}", service_conf.c_str());
+        RUN_LOG_CRI("set document failed, content:{%s}", service_conf.c_str());
         return(false);
     }
 
-    if (!markup.FindElem("service"))
+    if (!xml.into_element("service"))
     {
-        RUN_LOG_CRI("get root <%s> failed", "service");
+        RUN_LOG_CRI("into element <%s> failed", "service");
         return(false);
     }
 
     std::string show;
-    if (!markup_get_element(markup, "show", show, true) || !Stupid::Base::stupid_string_to_type(show, service_info.show))
+    if (!xml.get_element("show", show) || !Stupid::Base::stupid_string_to_type(show, service_info.show))
     {
         service_info.show = false;
     }
 
-    if (!markup_get_element(markup, "host", service_info.host, true) || service_info.host.empty())
+    if (!xml.get_element("host", service_info.host) || service_info.host.empty())
     {
         service_info.host = "127.0.0.1";
     }
 
-    markup_get_block(markup, "ports", "port", true, true, service_info.ports);
+    xml.get_element_block("ports", "port", true, service_info.ports);
 
-    if (!markup_get_element(markup, "path", service_info.path, false))
+    if (!xml.get_element("path", service_info.path))
     {
-        RUN_LOG_ERR("markup_get_element(path) failed");
+        RUN_LOG_ERR("get element <%s> failed", "path");
         return(false);
     }
     Stupid::Base::stupid_string_trim(service_info.path, "\"");
@@ -148,9 +74,9 @@ static bool parse_item(const std::string & service_conf, ServiceInfo & service_i
         service_info.path += '/';
     }
 
-    if (!markup_get_element(markup, "file", service_info.file, false))
+    if (!xml.get_element("file", service_info.file))
     {
-        RUN_LOG_ERR("markup_get_element(file) failed");
+        RUN_LOG_ERR("get element <%s> failed", "file");
         return(false);
     }
     Stupid::Base::stupid_string_trim(service_info.file, "\"");
@@ -169,7 +95,7 @@ static bool parse_item(const std::string & service_conf, ServiceInfo & service_i
     }
 #endif // _MSC_VER
 
-    markup_get_block(markup, "params", "param", true, true, service_info.params);
+    xml.get_element_block("params", "param", true, service_info.params);
     std::string params;
     Stupid::Base::stupid_piece_together(service_info.params.begin(), service_info.params.end(), " ", params);
     if (!params.empty())
@@ -184,55 +110,45 @@ static bool load_services(const std::string & root_directory, std::list<ServiceI
 {
     const std::string config_file(root_directory + "cfg/config.xml");
 
-    CMarkup markup;
-    if (!markup.Load(config_file))
+    Stupid::Base::Xml xml;
+
+    if (!xml.load(config_file.c_str()))
     {
-        RUN_LOG_CRI("markup.load failed, filename:{%s}", config_file.c_str());
+        RUN_LOG_CRI("load failed, filename:{%s}", config_file.c_str());
         return(false);
     }
 
-    if (!markup.FindElem("root"))
+    if (!xml.into_element("root"))
     {
-        RUN_LOG_CRI("get root <%s> failed", "root");
+        RUN_LOG_CRI("into element <%s> failed", "root");
         return(false);
     }
 
-    if (!markup.IntoElem())
+    if (!xml.into_element("services"))
     {
-        RUN_LOG_ERR("markup.intoelem failed");
+        RUN_LOG_CRI("into element <%s> failed", "services");
         return(false);
     }
 
-    if (!markup.FindElem("services"))
-    {
-        RUN_LOG_CRI("get block <%s> failed", "services");
-        return(false);
-    }
-
-    if (!markup.IntoElem())
-    {
-        RUN_LOG_ERR("markup.intoelem failed");
-        return(false);
-    }
-
-    while (0 != markup.FindNode(CMarkup::MNT_ELEMENT))
+    std::string sub_document;
+    while (xml.get_sub_document(sub_document))
     {
         ServiceInfo service_info;
-        if (parse_item(markup.GetSubDoc(), service_info))
+        if (parse_item(sub_document, service_info))
         {
             service_info_list.push_back(service_info);
         }
     }
 
-    if (!markup.OutOfElem())
+    if (!xml.outof_element())
     {
-        RUN_LOG_ERR("markup.outofelem failed");
+        RUN_LOG_ERR("out of element failed");
         return(false);
     }
 
-    if (!markup.OutOfElem())
+    if (!xml.outof_element())
     {
-        RUN_LOG_ERR("markup.outofelem failed");
+        RUN_LOG_ERR("out of element failed");
         return(false);
     }
 
@@ -256,34 +172,30 @@ static bool load_mail_info(const std::string & root_directory, bool & need_send_
 {
     const std::string config_file(root_directory + "cfg/config.xml");
 
-    CMarkup markup;
-    if (!markup.Load(config_file))
+    Stupid::Base::Xml xml;
+
+    if (!xml.load(config_file.c_str()))
     {
-        RUN_LOG_CRI("markup.load failed, filename:{%s}", config_file.c_str());
+        RUN_LOG_CRI("load failed, filename:{%s}", config_file.c_str());
         return(false);
     }
 
-    if (!markup.FindElem("root"))
+    if (!xml.into_element("root"))
     {
-        RUN_LOG_CRI("get root <%s> failed", "root");
+        RUN_LOG_ERR("into element <%s> failed", "root");
         return(false);
     }
 
-    if (!markup.IntoElem())
+    if (!xml.into_element("mail"))
     {
-        RUN_LOG_ERR("markup.intoelem failed");
-        return(false);
-    }
-
-    if (!markup.FindElem("mail"))
-    {
-        RUN_LOG_ERR("get block <%s> failed", "mail");
+        RUN_LOG_ERR("into element <%s> failed", "mail");
         return(false);
     }
 
     std::string send_mail;
-    if (!markup_get_element(markup, "send_mail", send_mail, false))
+    if (!xml.get_element("send_mail", send_mail))
     {
+        RUN_LOG_ERR("get element <%s> failed", "send_mail");
         return(false);
     }
     if (!Stupid::Base::stupid_string_to_type(send_mail, need_send_mail))
@@ -296,29 +208,34 @@ static bool load_mail_info(const std::string & root_directory, bool & need_send_
     {
         mail_info.m_verbose = false;
 
-        if (!markup_get_element(markup, "username", mail_info.m_username, false))
+        if (!xml.get_element("username", mail_info.m_username))
         {
+            RUN_LOG_ERR("get element <%s> failed", "username");
             return(false);
         }
 
-        if (!markup_get_element(markup, "password", mail_info.m_password, false))
+        if (!xml.get_element("password", mail_info.m_password))
         {
+            RUN_LOG_ERR("get element <%s> failed", "password");
             return(false);
         }
 
-        if (!markup_get_element(markup, "nickname", mail_info.m_nickname, false))
+        if (!xml.get_element("nickname", mail_info.m_nickname))
         {
+            RUN_LOG_ERR("get element <%s> failed", "nickname");
             return(false);
         }
 
-        if (!markup_get_element(markup, "smtp_host", mail_info.m_smtp_host, false))
+        if (!xml.get_element("smtp_host", mail_info.m_smtp_host))
         {
+            RUN_LOG_ERR("get element <%s> failed", "smtp_host");
             return(false);
         }
 
         std::string smtp_port;
-        if (!markup_get_element(markup, "smtp_port", smtp_port, false))
+        if (!xml.get_element("smtp_port", smtp_port))
         {
+            RUN_LOG_ERR("get element <%s> failed", "smtp_port");
             return(false);
         }
         if (!Stupid::Base::stupid_string_to_type(smtp_port, mail_info.m_smtp_port))
@@ -327,31 +244,36 @@ static bool load_mail_info(const std::string & root_directory, bool & need_send_
             return(false);
         }
 
-        if (!markup_get_element(markup, "subject", mail_info.m_mail_subject, false))
+        if (!xml.get_element("subject", mail_info.m_mail_subject))
         {
+            RUN_LOG_ERR("get element <%s> failed", "subject");
             return(false);
         }
 
-        if (!markup_get_element(markup, "from", mail_info.m_mail_from, false))
+        if (!xml.get_element("from", mail_info.m_mail_from))
         {
+            RUN_LOG_ERR("get element <%s> failed", "from");
             return(false);
         }
         construct_mail_user(mail_info.m_mail_from);
 
-        if (!markup_get_block(markup, "tos", "to", true, true, mail_info.m_mail_to_list))
+        if (!xml.get_element_block("tos", "to", true, mail_info.m_mail_to_list))
         {
+            RUN_LOG_ERR("get element block <%s, %s> failed", "tos", "to");
             return(false);
         }
         construct_mail_user_list(mail_info.m_mail_to_list);
 
-        if (!markup_get_block(markup, "ccs", "cc", true, true, mail_info.m_mail_cc_list))
+        if (!xml.get_element_block("ccs", "cc", true, mail_info.m_mail_cc_list))
         {
+            RUN_LOG_ERR("get element block <%s, %s> failed", "ccs", "cc");
             return(false);
         }
         construct_mail_user_list(mail_info.m_mail_cc_list);
 
-        if (!markup_get_block(markup, "bccs", "bcc", true, true, mail_info.m_mail_bcc_list))
+        if (!xml.get_element_block("bccs", "bcc", true, mail_info.m_mail_bcc_list))
         {
+            RUN_LOG_ERR("get element block <%s, %s> failed", "bccs", "bcc");
             return(false);
         }
         construct_mail_user_list(mail_info.m_mail_bcc_list);
@@ -363,9 +285,15 @@ static bool load_mail_info(const std::string & root_directory, bool & need_send_
         }
     }
 
-    if (!markup.OutOfElem())
+    if (!xml.outof_element())
     {
-        RUN_LOG_ERR("markup.outofelem failed");
+        RUN_LOG_ERR("out of element failed");
+        return(false);
+    }
+
+    if (!xml.outof_element())
+    {
+        RUN_LOG_ERR("out of element failed");
         return(false);
     }
 
@@ -382,21 +310,22 @@ static void get_check_interval(const std::string & root_directory, uint64_t & ch
 
     const std::string config_file(root_directory + "cfg/config.xml");
 
-    CMarkup markup;
-    if (!markup.Load(config_file))
+    Stupid::Base::Xml xml;
+
+    if (!xml.load(config_file.c_str()))
     {
-        RUN_LOG_ERR("markup.load failed, filename:{%s}", config_file.c_str());
+        RUN_LOG_ERR("load failed, filename:{%s}", config_file.c_str());
         return;
     }
 
-    if (!markup.FindElem("root"))
+    if (!xml.find_element("root"))
     {
-        RUN_LOG_ERR("get root <%s> failed", "root");
+        RUN_LOG_ERR("find element <%s> failed", "root");
         return;
     }
 
     std::string check_interval;
-    markup_get_element(markup, "check_interval", check_interval, true);
+    xml.get_child_element("check_interval", check_interval);
     if (!check_interval.empty())
     {
         Stupid::Base::stupid_string_to_type(check_interval, check_interval_seconds);

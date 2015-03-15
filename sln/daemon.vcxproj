@@ -24,13 +24,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\inc\daemon.h" />
-    <ClInclude Include="..\inc\markup.h" />
     <ClInclude Include="..\inc\utility.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\daemon.cpp" />
     <ClCompile Include="..\src\main.cpp" />
-    <ClCompile Include="..\src\markup.cpp" />
     <ClCompile Include="..\src\utility.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -153,6 +151,7 @@
         copy ..\..\..\stupid\gnu\curl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
         copy ..\..\..\stupid\gnu\openssl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
         copy ..\..\..\stupid\gnu\zlib\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
+        copy ..\..\..\stupid\gnu\cmarkup\lib\windows\$(Configuration)\*.dll  ..\bin\windows\$(Configuration)\;
       </Command>
     </PreLinkEvent>
     <PostBuildEvent>
@@ -220,6 +219,7 @@
         copy ..\..\..\stupid\gnu\curl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
         copy ..\..\..\stupid\gnu\openssl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
         copy ..\..\..\stupid\gnu\zlib\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
+        copy ..\..\..\stupid\gnu\cmarkup\lib\windows\$(Configuration)\*.dll  ..\bin\windows\$(Configuration)\;
       </Command>
     </PreLinkEvent>
     <PostBuildEvent>
