@@ -1,25 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root>
-    <mail>
-        <send_mail>false</send_mail>
-        <username>test_curl</username>
-        <password>test_curl_123!</password>
-        <nickname>daemon</nickname>
-        <smtp_host>smtp.126.com</smtp_host>
-        <smtp_port>25</smtp_port>
-        <subject>rayvision_w5_daemon</subject>
-        <from>test_curl@126.com</from>
-        <tos>
-            <to>ken_scott@163.com</to>
-        </tos>
-        <ccs>
-            <cc>ken_scott@126.com</cc>
-        </ccs>
-        <bccs>
-            <bcc></bcc>
-            <bcc></bcc>
-        </bccs>
-    </mail>
     <check_interval>30</check_interval>
     <services>
         <service>

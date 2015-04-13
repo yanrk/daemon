@@ -36,18 +36,12 @@ daemon_objects     = $(daemon_source:$(project_home)%.cpp=$(object_dir)%.o)
 system_libs        = -lpthread -ldl
 
 # open source librarys
-zlib_lib_inc       = $(gnu_home)/zlib/lib/linux
-openssl_lib_inc    = $(gnu_home)/openssl/lib/linux
-curl_lib_inc       = $(gnu_home)/curl/lib/linux
 cmarkup_lib_inc    = $(gnu_home)/cmarkup/lib/linux
-gnu_libs           = -L$(zlib_lib_inc) -lz
-gnu_libs          += -L$(openssl_lib_inc) -lcrypto -lssl
-gnu_libs          += -L$(curl_lib_inc) -lcurl
-gnu_libs          += -L$(cmarkup_lib_inc) -lcmarkup
+gnu_libs           = -L$(cmarkup_lib_inc) -lcmarkup
 
 # stupid librarys
 stupid_lib_inc     = $(stupid_home)/lib/linux
-stupid_libs        = -L$(stupid_lib_inc) -lstupid_tool -lstupid_net -lstupid_base
+stupid_libs        = -L$(stupid_lib_inc) -lstupid_net -lstupid_base
 
 # daemon depends librarys
 depend_libs        = $(stupid_libs)
@@ -84,9 +78,6 @@ build   : $(daemon_objects)
 
 cpfile  :
 	@cp $(stupid_lib_inc)/* $(bin_dir)/
-	@cp $(zlib_lib_inc)/* $(bin_dir)/
-	@cp $(openssl_lib_inc)/* $(bin_dir)/
-	@cp $(curl_lib_inc)/* $(bin_dir)/
 	@cp $(cmarkup_lib_inc)/* $(bin_dir)/
 
 run     : cpfile

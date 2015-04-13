@@ -17,7 +17,6 @@
 #include "base/filesystem/directory.h"
 #include "base/log/log.h"
 #include "base/utility/log_switch.h"
-#include "tool/utility/curl_switch.h"
 
 static bool get_root_directory(const char * file, std::string & path)
 {
@@ -47,7 +46,7 @@ int main(int argc, char * argv[])
     size_t unique_id = 0;
     if (!exclusive_init("daemon", unique_id))
     {
-        return(false);
+        return(0);
     }
 
     std::string current_work_directory;
@@ -69,8 +68,6 @@ int main(int argc, char * argv[])
         RUN_LOG_ERR("net switch init failed");
         return(3);
     }
-
-    Stupid::Base::Singleton<Stupid::Tool::CurlSwitch>::instance().work();
 
     if (!Stupid::Base::Singleton<Daemon>::instance().init(current_work_directory))
     {

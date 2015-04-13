@@ -19,7 +19,6 @@
 #include "base/time/single_timer.h"
 #include "base/utility/uncopy.h"
 #include "base/utility/singleton.h"
-#include "tool/mail/mail.h"
 
 class Daemon : public Stupid::Base::ISingleTimerSink, private Stupid::Base::Uncopy
 {
@@ -40,7 +39,6 @@ private:
 private:
     struct ProcessInfo
     {
-        bool          work;
         size_t        id;
         std::string   name;
     };
@@ -48,11 +46,10 @@ private:
 private:
     volatile bool                        m_running;
     std::string                          m_root_directory;
+    std::string                          m_record_file;
     uint64_t                             m_last_check_time;
     uint64_t                             m_check_interval;
     std::map<std::string, ProcessInfo>   m_process_info_map;
-    bool                                 m_send_mail;
-    Stupid::Tool::MailInfo               m_mail_info;
     Stupid::Base::SingleTimer            m_check_timer;
 };
 

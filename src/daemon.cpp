@@ -9,6 +9,7 @@
  * Copyright(C): 2015 - 2017
  ********************************************************/
 
+#include <fstream>
 #include "net/utility/tcp.h"
 #include "net/utility/utility.h"
 #include "daemon.h"
@@ -17,6 +18,7 @@
 #include "base/time/time.h"
 #include "base/config/xml.h"
 #include "base/string/string.h"
+#include "base/filesystem/directory.h"
 
 struct ServiceInfo
 {
@@ -155,151 +157,6 @@ static bool load_services(const std::string & root_directory, std::list<ServiceI
     return(true);
 }
 
-static void construct_mail_user(std::string & mail_user)
-{
-    mail_user = "<" + mail_user + ">";
-}
-
-static void construct_mail_user_list(std::list<std::string> & mail_user_list)
-{
-    for (std::list<std::string>::iterator iter = mail_user_list.begin(); mail_user_list.end() != iter; ++iter)
-    {
-        construct_mail_user(*iter);
-    }
-}
-
-static bool load_mail_info(const std::string & root_directory, bool & need_send_mail, Stupid::Tool::MailInfo & mail_info)
-{
-    const std::string config_file(root_directory + "cfg/config.xml");
-
-    Stupid::Base::Xml xml;
-
-    if (!xml.load(config_file.c_str()))
-    {
-        RUN_LOG_CRI("load failed, filename:{%s}", config_file.c_str());
-        return(false);
-    }
-
-    if (!xml.into_element("root"))
-    {
-        RUN_LOG_ERR("into element <%s> failed", "root");
-        return(false);
-    }
-
-    if (!xml.into_element("mail"))
-    {
-        RUN_LOG_ERR("into element <%s> failed", "mail");
-        return(false);
-    }
-
-    std::string send_mail;
-    if (!xml.get_element("send_mail", send_mail))
-    {
-        RUN_LOG_ERR("get element <%s> failed", "send_mail");
-        return(false);
-    }
-    if (!Stupid::Base::stupid_string_to_type(send_mail, need_send_mail))
-    {
-        RUN_LOG_ERR("<send_mail> is invalid");
-        return(false);
-    }
-
-    if (need_send_mail)
-    {
-        mail_info.m_verbose = false;
-
-        if (!xml.get_element("username", mail_info.m_username))
-        {
-            RUN_LOG_ERR("get element <%s> failed", "username");
-            return(false);
-        }
-
-        if (!xml.get_element("password", mail_info.m_password))
-        {
-            RUN_LOG_ERR("get element <%s> failed", "password");
-            return(false);
-        }
-
-        if (!xml.get_element("nickname", mail_info.m_nickname))
-        {
-            RUN_LOG_ERR("get element <%s> failed", "nickname");
-            return(false);
-        }
-
-        if (!xml.get_element("smtp_host", mail_info.m_smtp_host))
-        {
-            RUN_LOG_ERR("get element <%s> failed", "smtp_host");
-            return(false);
-        }
-
-        std::string smtp_port;
-        if (!xml.get_element("smtp_port", smtp_port))
-        {
-            RUN_LOG_ERR("get element <%s> failed", "smtp_port");
-            return(false);
-        }
-        if (!Stupid::Base::stupid_string_to_type(smtp_port, mail_info.m_smtp_port))
-        {
-            RUN_LOG_ERR("<smtp_port> is invalid");
-            return(false);
-        }
-
-        if (!xml.get_element("subject", mail_info.m_mail_subject))
-        {
-            RUN_LOG_ERR("get element <%s> failed", "subject");
-            return(false);
-        }
-
-        if (!xml.get_element("from", mail_info.m_mail_from))
-        {
-            RUN_LOG_ERR("get element <%s> failed", "from");
-            return(false);
-        }
-        construct_mail_user(mail_info.m_mail_from);
-
-        if (!xml.get_element_block("tos", "to", true, mail_info.m_mail_to_list))
-        {
-            RUN_LOG_ERR("get element block <%s, %s> failed", "tos", "to");
-            return(false);
-        }
-        construct_mail_user_list(mail_info.m_mail_to_list);
-
-        if (!xml.get_element_block("ccs", "cc", true, mail_info.m_mail_cc_list))
-        {
-            RUN_LOG_ERR("get element block <%s, %s> failed", "ccs", "cc");
-            return(false);
-        }
-        construct_mail_user_list(mail_info.m_mail_cc_list);
-
-        if (!xml.get_element_block("bccs", "bcc", true, mail_info.m_mail_bcc_list))
-        {
-            RUN_LOG_ERR("get element block <%s, %s> failed", "bccs", "bcc");
-            return(false);
-        }
-        construct_mail_user_list(mail_info.m_mail_bcc_list);
-
-        if (mail_info.m_mail_to_list.empty() && mail_info.m_mail_cc_list.empty() && mail_info.m_mail_bcc_list.empty())
-        {
-            RUN_LOG_ERR("no mail receiver");
-            return(false);
-        }
-    }
-
-    if (!xml.outof_element())
-    {
-        RUN_LOG_ERR("out of element failed");
-        return(false);
-    }
-
-    if (!xml.outof_element())
-    {
-        RUN_LOG_ERR("out of element failed");
-        return(false);
-    }
-
-    return(true);
-}
-
 static void get_check_interval(const std::string & root_directory, uint64_t & check_interval_seconds)
 {
     const uint64_t min_interval_seconds = 3;
@@ -341,14 +198,27 @@ static void get_check_interval(const std::string & root_directory, uint64_t & ch
     }
 }
 
+static void append_record_content(const std::string & record_file, const std::string & record_content)
+{
+    std::ofstream ofs(record_file.c_str(), std::ios::app);
+    if (ofs.is_open())
+    {
+        ofs << Stupid::Base::stupid_get_datetime() << " " << record_content << std::endl;
+        ofs.close();
+    }
+    else
+    {
+        RUN_LOG_ERR("append record content failed: {%s}", record_content.c_str());
+    }
+}
+
 Daemon::Daemon()
     : m_running(false)
     , m_root_directory()
+    , m_record_file()
     , m_last_check_time(0)
     , m_check_interval(0)
     , m_process_info_map()
-    , m_send_mail(false)
-    , m_mail_info()
     , m_check_timer()
 {
 
@@ -367,19 +237,19 @@ bool Daemon::init(const std::string & current_work_directory)
 
     m_root_directory = current_work_directory;
 
-    get_check_interval(m_root_directory, m_check_interval);
+    m_record_file = m_root_directory + "log/record/";
+    Stupid::Base::stupid_create_directory_recursive(m_record_file);
+    m_record_file += Stupid::Base::stupid_get_date() + ".txt";
 
-    if (!load_mail_info(m_root_directory, m_send_mail, m_mail_info))
-    {
-        RUN_LOG_CRI("load mail info failed");
-        return(false);
-    }
+    get_check_interval(m_root_directory, m_check_interval);
 
     if (!m_check_timer.init(this, 30))
     {
         RUN_LOG_CRI("check timer init failed");
         return(false);
     }
+
+    append_record_content(m_record_file, "--------- daemon init ---------");
 
     RUN_LOG_DBG("daemon init success");
 
@@ -396,6 +266,8 @@ void Daemon::exit()
     m_running = false;
 
     m_check_timer.exit();
+
+    append_record_content(m_record_file, "--------- daemon exit ---------");
 
     RUN_LOG_DBG("daemon exit success");
 }
@@ -416,11 +288,10 @@ void Daemon::on_timer(bool first_time, size_t index)
 
     for (std::list<ServiceInfo>::const_iterator iter = service_info_list.begin(); service_info_list.end() != iter; ++iter)
     {
-        const ServiceInfo & service_info = *iter;
-        std::map<std::string, ProcessInfo>::iterator iter_proc = m_process_info_map.find(service_info.cmdl);
+        std::map<std::string, ProcessInfo>::iterator iter_proc = m_process_info_map.find(iter->cmdl);
         bool service_is_ok = true;
 
-        if (service_info.ports.empty())
+        if (iter->ports.empty())
         {
             std::string process_name;
             if (m_process_info_map.end() != iter_proc)
@@ -430,25 +301,25 @@ void Daemon::on_timer(bool first_time, size_t index)
             else
             {
 #ifdef _MSC_VER
-                process_name = service_info.file;
+                process_name = iter->file;
 #else
-                process_name = service_info.cmdl;
+                process_name = iter->cmdl;
 #endif // _MSC_VER
             }
             if (!is_process_alive(process_name))
             {
-                RUN_LOG_DBG("service {%s} is not alive", service_info.cmdl.c_str());
+                RUN_LOG_DBG("service {%s} is not alive", iter->cmdl.c_str());
                 service_is_ok = false;
             }
         }
         else
         {
-            for (std::list<std::string>::const_iterator iter_port = service_info.ports.begin(); service_info.ports.end() != iter_port; ++iter_port)
+            for (std::list<std::string>::const_iterator iter_port = iter->ports.begin(); iter->ports.end() != iter_port; ++iter_port)
             {
                 socket_t connecter = BAD_SOCKET;
-                if (!Stupid::Net::tcp_connect(service_info.host.c_str(), iter_port->c_str(), connecter))
+                if (!Stupid::Net::tcp_connect(iter->host.c_str(), iter_port->c_str(), connecter))
                 {
-                    RUN_LOG_DBG("service {%s} can not be connected on port %s", service_info.cmdl.c_str(), iter_port->c_str());
+                    RUN_LOG_DBG("service {%s} can not be connected on port %s", iter->cmdl.c_str(), iter_port->c_str());
                     service_is_ok = false;
                     break;
                 }
@@ -460,41 +331,26 @@ void Daemon::on_timer(bool first_time, size_t index)
         {
             if (m_process_info_map.end() != iter_proc)
             {
-                RUN_LOG_DBG("stop service {%s} begin", service_info.cmdl.c_str());
+                RUN_LOG_DBG("stop service {%s} begin", iter->cmdl.c_str());
                 kill_process(iter_proc->second.id, iter_proc->second.name);
-                RUN_LOG_DBG("stop service {%s} end", service_info.cmdl.c_str());
+                m_process_info_map.erase(iter_proc);
+                RUN_LOG_DBG("stop service {%s} end", iter->cmdl.c_str());
+                append_record_content(m_record_file, "process {" + iter->cmdl + "} is stop");
             }
 
             size_t process_id = 0;
             std::string process_name;
             if (create_process(iter->path, iter->cmdl, iter->show, process_id, process_name))
             {
-                RUN_LOG_DBG("start service {%s} success", service_info.cmdl.c_str());
-                ProcessInfo process_info = { false, process_id, process_name };
+                RUN_LOG_DBG("start service {%s} success", iter->cmdl.c_str());
+                ProcessInfo process_info = { process_id, process_name };
                 m_process_info_map[iter->cmdl] = process_info;
+                append_record_content(m_record_file, "process {" + iter->cmdl + "} is start");
             }
             else
             {
-                RUN_LOG_DBG("start service {%s} failure", service_info.cmdl.c_str());
-            }
-        }
-
-        if (m_send_mail && m_process_info_map.end() != iter_proc && iter_proc->second.work != service_is_ok)
-        {
-            iter_proc->second.work = service_is_ok;
-
-            if (service_is_ok)
-            {
-                m_mail_info.m_mail_content = "<DIV> {" + iter->cmdl + "} is restart </DIV>";
-            }
-            else
-            {
-                m_mail_info.m_mail_content = "<DIV> {" + iter->cmdl + "} is stop </DIV>";
-            }
-
-            if (!Stupid::Tool::MailHelper::send_mail(m_mail_info))
-            {
-                RUN_LOG_ERR("send mail failed, content : {%s}", m_mail_info.m_mail_content.c_str());
+                RUN_LOG_ERR("start service {%s} failure", iter->cmdl.c_str());
+                append_record_content(m_record_file, "start process {" + iter->cmdl + "} failed");
             }
         }
     }

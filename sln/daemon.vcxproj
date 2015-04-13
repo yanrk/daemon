@@ -114,14 +114,10 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../stupid/lib/windows/$(Configuration);</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;stupid_base.lib;stupid_net.lib;stupid_tool.lib;</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;stupid_base.lib;stupid_net.lib;</AdditionalDependencies>
     </Link>
     <PreLinkEvent>
-      <Command>
-        copy ..\..\..\stupid\gnu\curl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
-        copy ..\..\..\stupid\gnu\openssl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
-        copy ..\..\..\stupid\gnu\zlib\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
-      </Command>
+      <Command></Command>
     </PreLinkEvent>
     <PostBuildEvent>
       <Command>
@@ -142,15 +138,12 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../stupid/lib/windows/$(Configuration);</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;stupid_base.lib;stupid_net.lib;stupid_tool.lib;</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;stupid_base.lib;stupid_net.lib;</AdditionalDependencies>
     </Link>
     <PreLinkEvent>
       <Command>
         copy ..\..\..\stupid\lib\windows\$(Configuration)\stupid_*.dll  ..\bin\windows\$(Configuration)\;
         copy ..\..\..\stupid\lib\windows\$(Configuration)\stupid_*.pdb  ..\bin\windows\$(Configuration)\;
-        copy ..\..\..\stupid\gnu\curl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
-        copy ..\..\..\stupid\gnu\openssl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
-        copy ..\..\..\stupid\gnu\zlib\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
         copy ..\..\..\stupid\gnu\cmarkup\lib\windows\$(Configuration)\*.dll  ..\bin\windows\$(Configuration)\;
       </Command>
     </PreLinkEvent>
@@ -178,14 +171,10 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>../../../stupid/lib/windows/$(Configuration);</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;stupid_base.lib;stupid_net.lib;stupid_tool.lib;</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;stupid_base.lib;stupid_net.lib;</AdditionalDependencies>
     </Link>
     <PreLinkEvent>
-      <Command>
-        copy ..\..\..\stupid\gnu\curl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
-        copy ..\..\..\stupid\gnu\openssl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
-        copy ..\..\..\stupid\gnu\zlib\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
-      </Command>
+      <Command></Command>
     </PreLinkEvent>
     <PostBuildEvent>
       <Command>
@@ -210,15 +199,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>../../../stupid/lib/windows/$(Configuration);</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;stupid_base.lib;stupid_net.lib;stupid_tool.lib;</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;stupid_base.lib;stupid_net.lib;</AdditionalDependencies>
     </Link>
     <PreLinkEvent>
       <Command>
         copy ..\..\..\stupid\lib\windows\$(Configuration)\stupid_*.dll  ..\bin\windows\$(Configuration)\;
         copy ..\..\..\stupid\lib\windows\$(Configuration)\stupid_*.pdb  ..\bin\windows\$(Configuration)\;
-        copy ..\..\..\stupid\gnu\curl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
-        copy ..\..\..\stupid\gnu\openssl\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
-        copy ..\..\..\stupid\gnu\zlib\lib\windows\*.dll  ..\bin\windows\$(Configuration)\;
         copy ..\..\..\stupid\gnu\cmarkup\lib\windows\$(Configuration)\*.dll  ..\bin\windows\$(Configuration)\;
       </Command>
     </PreLinkEvent>
