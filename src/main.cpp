@@ -23,22 +23,22 @@ static bool get_root_directory(const char * file, std::string & path)
     if (!Stupid::Base::stupid_extract_directory(file, path, true))
     {
         std::cout << "extract directory failed" << std::endl;
-        return(false);
+        return false;
     }
 
     if (!Stupid::Base::stupid_set_current_work_directory(path))
     {
         std::cout << "set current work directory failed" << std::endl;
-        return(false);
+        return false;
     }
 
     if (!Stupid::Base::stupid_get_current_work_directory(path))
     {
         std::cout << "get current work directory failed" << std::endl;
-        return(false);
+        return false;
     }
 
-    return(true);
+    return true;
 }
 
 int main(int argc, char * argv[])
@@ -46,33 +46,33 @@ int main(int argc, char * argv[])
     size_t unique_id = 0;
     if (!exclusive_init("daemon", unique_id))
     {
-        return(0);
+        return 0;
     }
 
     std::string current_work_directory;
     if (!get_root_directory(argv[0], current_work_directory))
     {
         std::cout << "get root directory failed" << std::endl;
-        return(1);
+        return 1;
     }
 
     const std::string log_config(current_work_directory + "cfg/log.ini");
     if (!Stupid::Base::Singleton<Stupid::Base::LogSwitch>::instance().init(log_config.c_str()))
     {
         std::cout << "log init failed" << std::endl;
-        return(2);
+        return 2;
     }
 
     if (!Stupid::Base::Singleton<Stupid::Net::NetSwitch>::instance().init())
     {
         RUN_LOG_ERR("net switch init failed");
-        return(3);
+        return 3;
     }
 
     if (!Stupid::Base::Singleton<Daemon>::instance().init(current_work_directory))
     {
         RUN_LOG_ERR("daemon init failed");
-        return(4);
+        return 4;
     }
 
     std::cout << "daemon start success, input \"exit\" to stop it" << std::endl;
@@ -95,5 +95,5 @@ int main(int argc, char * argv[])
 
     exclusive_exit(unique_id);
 
-    return(0);
+    return 0;
 }

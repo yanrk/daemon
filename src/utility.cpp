@@ -41,7 +41,7 @@ bool exclusive_init(const char * exclusive_unique_name, size_t & unique_id)
     if (nullptr == exclusive_unique_name)
     {
         printf("exclusive_unique_name is nullptr\n");
-        return(false);
+        return false;
     }
 
 #ifdef _MSC_VER
@@ -62,17 +62,17 @@ bool exclusive_init(const char * exclusive_unique_name, size_t & unique_id)
         {
             ::CloseHandle(mutex);
         }
-        return(false);
+        return false;
     }
     else if (nullptr == mutex)
     {
         printf("create mutex %s failed: %d\n", exclusive_file.c_str(), stupid_system_error());
-        return(false);
+        return false;
     }
 
     unique_id = reinterpret_cast<size_t>(mutex);
 
-    return(true);
+    return true;
 #else
     unique_id = static_cast<size_t>(-1);
 
@@ -87,7 +87,7 @@ bool exclusive_init(const char * exclusive_unique_name, size_t & unique_id)
     if (fd < 0)
     {
         printf("open %s failed: %d\n", exclusive_file.c_str(), stupid_system_error());
-        return(false);
+        return false;
     }
 
     struct flock locker;
@@ -106,7 +106,7 @@ bool exclusive_init(const char * exclusive_unique_name, size_t & unique_id)
             printf("lock %s failed: %d\n", exclusive_file.c_str(), stupid_system_error());
         }
         ::close(fd);
-        return(false);
+        return false;
     }
 
     std::string pid;
@@ -128,7 +128,7 @@ bool exclusive_init(const char * exclusive_unique_name, size_t & unique_id)
 
     unique_id = static_cast<size_t>(fd);
 
-    return(true);
+    return true;
 #endif // _MSC_VER
 }
 
@@ -166,7 +166,7 @@ static bool get_all_process(std::list<PROCESS_INFO> & process_list)
     if (INVALID_HANDLE_VALUE == snapshot)
     {
         RUN_LOG_ERR("CreateToolhelp32Snapshot failed: %d", stupid_system_error());
-        return(false);
+        return false;
     }
 
     PROCESSENTRY32 pe = { sizeof(PROCESSENTRY32) };
@@ -186,7 +186,7 @@ static bool get_all_process(std::list<PROCESS_INFO> & process_list)
     if (nullptr == file)
     {
         RUN_LOG_ERR("popen(%s) failed: %d", command, stupid_system_error());
-        return(false);
+        return false;
     }
 
     const std::string spaces(" ");
@@ -224,7 +224,7 @@ static bool get_all_process(std::list<PROCESS_INFO> & process_list)
     ::pclose(file);
 #endif // _MSC_VER
 
-    return(true);
+    return true;
 }
 
 static bool get_process_name(size_t process_id, std::string & process_name)
@@ -237,19 +237,19 @@ static bool get_process_name(size_t process_id, std::string & process_name)
         if (iter->pid == process_id)
         {
             process_name = iter->cmd;
-            return(true);
+            return true;
         }
     }
 
     process_name.clear();
-    return(false);
+    return false;
 }
 
 bool create_process(const std::string & path, const std::string & command_line, bool show_window, size_t & process_id, std::string & process_name)
 {
     if (command_line.empty())
     {
-        return(true);
+        return true;
     }
 
     RUN_LOG_DBG("try to create process with command line: {%s}", command_line.c_str());
@@ -263,7 +263,7 @@ bool create_process(const std::string & path, const std::string & command_line, 
     if (!::CreateProcess(nullptr, reinterpret_cast<LPSTR>(const_cast<char *>(command_line.c_str())), nullptr, nullptr, false, creation_flags, nullptr, nullptr, &si, &pi))
     {
         RUN_LOG_ERR("create process failed: command(%s), errno(%d)", command_line.c_str(), stupid_system_error());
-        return(false);
+        return false;
     }
     ::CloseHandle(pi.hThread);
     ::CloseHandle(pi.hProcess);
@@ -277,7 +277,7 @@ bool create_process(const std::string & path, const std::string & command_line, 
     if (pid < 0)
     {
         RUN_LOG_ERR("fork failed: command(%s), errno(%d)", command_line.c_str(), stupid_system_error());
-        return(false);
+        return false;
     }
     else if (0 == pid)
     {
@@ -309,7 +309,7 @@ bool create_process(const std::string & path, const std::string & command_line, 
 
     RUN_LOG_DBG("create process success with command line: {%s}", command_line.c_str());
 
-    return(true);
+    return true;
 }
 
 static bool process_is_alive(const std::list<PROCESS_INFO> & process_list, size_t process_id, const std::string & process_name)
@@ -318,23 +318,23 @@ static bool process_is_alive(const std::list<PROCESS_INFO> & process_list, size_
     {
         if (iter->pid == process_id)
         {
-            return(iter->cmd == process_name);
+            return iter->cmd == process_name;
         }
     }
-    return(false);
+    return false;
 }
 
 static bool kill_process(size_t process_id, size_t exit_code = 9)
 {
     if (0 == process_id)
     {
-        return(true);
+        return true;
     }
 
     if (Stupid::Base::get_pid() == process_id)
     {
         RUN_LOG_CRI("kill process exception: why do you kill current process?");
-        return(true);
+        return true;
     }
 
 #ifdef _MSC_VER
@@ -342,12 +342,12 @@ static bool kill_process(size_t process_id, size_t exit_code = 9)
     if (nullptr == process)
     {
         RUN_LOG_ERR("open process %u failed: %d", process_id, stupid_system_error());
-        return(false);
+        return false;
     }
     if (!::TerminateProcess(process, exit_code))
     {
         RUN_LOG_ERR("kill process %u failed: %d", process_id, stupid_system_error());
-        return(false);
+        return false;
     }
 #else
     pid_t pid = static_cast<pid_t>(process_id);
@@ -360,14 +360,14 @@ static bool kill_process(size_t process_id, size_t exit_code = 9)
         RUN_LOG_ERR("wait process %u failed: %d", process_id, stupid_system_error());
     }
 #endif // _MSC_VER
-    return(true);
+    return true;
 }
 
 bool kill_process(size_t process_id, const std::string & process_name)
 {
     if (Stupid::Base::get_pid() == process_id || 0 == process_id)
     {
-        return(true);
+        return true;
     }
 
     RUN_LOG_DBG("kill process: [%u:%s] begin", process_id, process_name.c_str());
@@ -408,7 +408,7 @@ bool kill_process(size_t process_id, const std::string & process_name)
 
     RUN_LOG_DBG("kill process: [%u:%s] end", process_id, process_name.c_str());
 
-    return(ret);
+    return ret;
 }
 
 bool is_process_alive(const std::string & process_name)
@@ -420,9 +420,9 @@ bool is_process_alive(const std::string & process_name)
     {
         if (iter->cmd == process_name)
         {
-            return(true);
+            return true;
         }
     }
 
-    return(false);
+    return false;
 }

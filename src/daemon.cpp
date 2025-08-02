@@ -38,13 +38,13 @@ static bool parse_item(const std::string & service_conf, ServiceInfo & service_i
     if (!xml.set_document(service_conf.c_str()))
     {
         RUN_LOG_CRI("set document failed, content:{%s}", service_conf.c_str());
-        return(false);
+        return false;
     }
 
     if (!xml.into_element("service"))
     {
         RUN_LOG_CRI("into element <%s> failed", "service");
-        return(false);
+        return false;
     }
 
     std::string show;
@@ -63,13 +63,13 @@ static bool parse_item(const std::string & service_conf, ServiceInfo & service_i
     if (!xml.get_element("path", service_info.path))
     {
         RUN_LOG_ERR("get element <%s> failed", "path");
-        return(false);
+        return false;
     }
     Stupid::Base::stupid_string_trim(service_info.path, "\"");
     if (service_info.path.empty())
     {
         RUN_LOG_ERR("<path> is empty");
-        return(false);
+        return false;
     }
     if ('/' != *service_info.path.rbegin() && '\\' != *service_info.path.rbegin())
     {
@@ -79,13 +79,13 @@ static bool parse_item(const std::string & service_conf, ServiceInfo & service_i
     if (!xml.get_element("file", service_info.file))
     {
         RUN_LOG_ERR("get element <%s> failed", "file");
-        return(false);
+        return false;
     }
     Stupid::Base::stupid_string_trim(service_info.file, "\"");
     if (service_info.file.empty())
     {
         RUN_LOG_ERR("<file> is empty");
-        return(false);
+        return false;
     }
 
     service_info.cmdl = service_info.path + service_info.file;
@@ -105,7 +105,7 @@ static bool parse_item(const std::string & service_conf, ServiceInfo & service_i
         service_info.cmdl += " " + params;
     }
 
-    return(true);
+    return true;
 }
 
 static bool load_services(const std::string & root_directory, std::list<ServiceInfo> & service_info_list)
@@ -117,19 +117,19 @@ static bool load_services(const std::string & root_directory, std::list<ServiceI
     if (!xml.load(config_file.c_str()))
     {
         RUN_LOG_CRI("load failed, filename:{%s}", config_file.c_str());
-        return(false);
+        return false;
     }
 
     if (!xml.into_element("root"))
     {
         RUN_LOG_CRI("into element <%s> failed", "root");
-        return(false);
+        return false;
     }
 
     if (!xml.into_element("services"))
     {
         RUN_LOG_CRI("into element <%s> failed", "services");
-        return(false);
+        return false;
     }
 
     std::string sub_document;
@@ -145,16 +145,16 @@ static bool load_services(const std::string & root_directory, std::list<ServiceI
     if (!xml.outof_element())
     {
         RUN_LOG_ERR("out of element failed");
-        return(false);
+        return false;
     }
 
     if (!xml.outof_element())
     {
         RUN_LOG_ERR("out of element failed");
-        return(false);
+        return false;
     }
 
-    return(true);
+    return true;
 }
 
 static void get_check_interval(const std::string & root_directory, uint64_t & check_interval_seconds)
@@ -246,14 +246,14 @@ bool Daemon::init(const std::string & current_work_directory)
     if (!m_check_timer.init(this, 30))
     {
         RUN_LOG_CRI("check timer init failed");
-        return(false);
+        return false;
     }
 
     append_record_content(m_record_file, "--------- daemon init ---------");
 
     RUN_LOG_DBG("daemon init success");
 
-    return(true);
+    return true;
 }
 
 void Daemon::exit()
